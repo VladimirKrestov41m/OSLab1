@@ -5,13 +5,15 @@
 
 #define MAX_WIDTH 64
 
-struct linesInfo {
+struct linesInfo
+{
 	int count;//Кол-во записей в буфере
 	int size; //Размер буфера
 	char** lines;//буфер (строки)
 };
 
-struct Buf_in_out {
+struct Buf_in_out
+{
 	linesInfo* lines_in;//входной буфер
 	linesInfo* lines_out;//выходной буфер
 };
@@ -29,7 +31,8 @@ void FreeResources(int size);
 linesInfo* buf_in, * buf_out;
 Buf_in_out* buf_in_out;
 
-int main() {
+int main()
+{
 	HANDLE threads[3];
 	InitializeCriticalSection(&CriticalSectionReader);
 	InitializeCriticalSection(&CriticalSectionWriter);
@@ -42,7 +45,8 @@ int main() {
 	lines_in = (char**)malloc(size * sizeof(char*));
 	lines_out = (char**)malloc(size * sizeof(char*));
 
-	for (int i = 0; i < size; i++) {
+	for (int i = 0; i < size; i++)
+	{
 		lines_in[i] = (char*)malloc(MAX_WIDTH * sizeof(char));
 		memset(lines_in[i], '0', (MAX_WIDTH * sizeof(char)));
 		lines_in[i][MAX_WIDTH - 1] = '\0';
@@ -67,7 +71,8 @@ int main() {
 	threads[1] = CreateThread(NULL, 0, Aligment_text, buf_in_out, 0, NULL);
 	threads[2] = CreateThread(NULL, 0, WriteFile, buf_out, 0, NULL);
 
-	if (threads[0] == NULL || threads[1] == NULL || threads[2] == NULL) {
+	if (threads[0] == NULL || threads[1] == NULL || threads[2] == NULL)
+	{
 		TerminateThread(threads[0], 0);
 		TerminateThread(threads[1], 0);
 		TerminateThread(threads[2], 0);
@@ -78,7 +83,6 @@ int main() {
 	}
 
 	printf("Procceses are working.\n");
-
 	WaitForMultipleObjects(3, threads, TRUE, INFINITE);
 
 	for (int i = 0; i < 3; i++)
@@ -88,15 +92,18 @@ int main() {
 
 	FreeResources(size);
 	system("pause");
+
 	return 0;
 }
 
 void FreeResources(int size)
 {
-	for (int i = 0; i < size; i++) {
+	for (int i = 0; i < size; i++)
+	{
 		free(lines_in[i]);
 		free(lines_out[i]);
 	}
+
 	free(lines_in);
 	free(lines_out);
 	free(buf_in);
@@ -104,10 +111,11 @@ void FreeResources(int size)
 	free(buf_in_out);
 }
 
-DWORD WINAPI ReadFile(LPVOID param) {  //Чтение текста из файла и сохранение его в некоторый буфер
+DWORD WINAPI ReadFile(LPVOID param) //Чтение текста из файла
+{
 	linesInfo* buf_in = (linesInfo*)param;
-	int buf_count = 0;//номер считываемой строки
-	int next_line = 1;//Номер следующей строки
+	int buf_count = 0; //номер считываемой строки
+	int next_line = 1; //Номер следующей строки
 	int start_position = 0;
 	bool ending = false;
 	bool first_half = true, second_half = true;
@@ -118,12 +126,12 @@ DWORD WINAPI ReadFile(LPVOID param) {  //Чтение текста из файла и сохранение его
 	FILE* f;
 	f = fopen("text.txt", "r");
 	fflush(f);
-	rewind(f);
+	rewind(f); // Указатель в начало файла
 
 	if (f != NULL)
 	{
-		do
-		{  //Цикл жизни потока, пока не прочтется весь файл
+		do //Цикл жизни потока, пока не прочтется весь файл
+		{  
 			if (buf_in->count == 0)
 			{
 				next_line = 1;
@@ -142,20 +150,22 @@ DWORD WINAPI ReadFile(LPVOID param) {  //Чтение текста из файла и сохранение его
 
 					start_position = safeEndPosition;
 				}
+
 				for (int j = start_position; j < MAX_WIDTH - 1; j++)
 				{
 					symbol = fgetc(f);
 
-					if (symbol != EOF) //Если символ не конца файла, то ...
+					if (symbol != EOF) // Символ конца файла
 					{
 						buf_in->lines[buf_in->count][j] = symbol;
 					}
-					else //Если файл кончился, то...
+					else // Конец файла
 					{
 						ending = true;
 						break;
 					}
 				}
+
 				if (!ending)
 				{
 					int y = MAX_WIDTH - 1;
@@ -165,7 +175,7 @@ DWORD WINAPI ReadFile(LPVOID param) {  //Чтение текста из файла и сохранение его
 					{
 						symbol = buf_in->lines[buf_in->count][y];
 						y--;
-					} while (symbol != ' ');//Находим первый попавшийся пробел
+					} while (symbol != ' '); //Находим первый попавшийся пробел
 
 					position = y;
 					y = 0;
@@ -186,9 +196,9 @@ DWORD WINAPI ReadFile(LPVOID param) {  //Чтение текста из файла и сохранение его
 						buf_in->count++;
 						LeaveCriticalSection(&CriticalSectionReader);
 					}
-					else //Иначе...
+					else
 					{
-						for (int i = position + 2; i < MAX_WIDTH - 1; i++) //Переносим оставшейся слово после пробела но новую строчку
+						for (int i = position + 2; i < MAX_WIDTH - 1; i++) //Переносим оставшейся слово после пробела на новую строчку
 						{
 							buf_in->lines[next_line][y] = buf_in->lines[buf_in->count][i];
 							buf_in->lines[buf_in->count][i] = ' ';
@@ -276,7 +286,7 @@ DWORD WINAPI WriteFile(LPVOID param) //Запись обработанного текста в новый файл
 
 	fclose(f);
 
-	for (int i = 0; i < buf_out->size; i++) //Что не так с удалением памяти ???????????????????????????????????????
+	for (int i = 0; i < buf_out->size; i++)
 	{
 		free(delta_lines[i]);
 	}
@@ -328,7 +338,7 @@ DWORD WINAPI Aligment_text(LPVOID param) //Обработка текста так, чтобы он был вы
 					{
 						for (int j = position; j < MAX_WIDTH - 2; j++) //Находим пробел
 						{
-							if (buf_in_out->lines_out->lines[i][j] == ' ') 
+							if (buf_in_out->lines_out->lines[i][j] == ' ')
 							{
 								position = j;//Запоминаем позицию пробела
 								break;
@@ -343,13 +353,13 @@ DWORD WINAPI Aligment_text(LPVOID param) //Обработка текста так, чтобы он был вы
 						buf_in_out->lines_out->lines[i][position] = ' '; //На позиции ставим пробел
 						position += 2; //Сохраняем позицию для следующего шага
 
-						if (position > MAX_WIDTH - 2) 
+						if (position > MAX_WIDTH - 2)
 						{
 							step++;
 							position = 0;
 						}
 					}
-					else 
+					else
 					{
 						printf("Alignment line:    %s\n", buf_in_out->lines_out->lines[i]);
 						step = 2;
@@ -367,7 +377,7 @@ DWORD WINAPI Aligment_text(LPVOID param) //Обработка текста так, чтобы он был вы
 			buf_in_out->lines_out->count = buf_in_out->lines_out->size - 1;
 			LeaveCriticalSection(&CriticalSectionReader);
 		}
-		else 
+		else
 		{
 			Sleep(0);
 		}
